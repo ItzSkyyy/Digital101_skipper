@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FSP Auto-Complete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,wght@0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #f0ebe0;
+    --ink:      #1c1a14;
+    --mid:      #7a7468;
+    --line:     #d4cfc4;
+    --cream:    #e8e2d4;
+    --orange:   #e8622a;
+    --orange2:  #c94e1a;
+    --teal:     #2a7a6e;
+    --yellow:   #f0c040;
+    --red-tag:  #d94040;
+    --tag-bg:   #fff8e8;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 3rem 1.5rem 4rem;
+    /* subtle grid paper lines */
+    background-image:
+      linear-gradient(rgba(180,170,150,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(180,170,150,0.15) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: up 0.6s cubic-bezier(0.22,1,0.36,1) both;
+  }
+
+  @keyframes up {
+    from { opacity:0; transform: translateY(20px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ── header strip ── */
+  .header-strip {
+    width: 100%;
+    background: var(--ink);
+    color: var(--yellow);
+    font-size: 0.6rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0.45rem 1rem;
+    border-radius: 4px 4px 0 0;
+    border: 2px solid var(--ink);
+    border-bottom: none;
+  }
+
+  /* ── main card ── */
+  .card {
+    width: 100%;
+    background: #faf6ee;
+    border: 2px solid var(--ink);
+    border-radius: 0 0 6px 6px;
+    padding: 2.4rem 2.4rem 2rem;
+    box-shadow: 5px 5px 0 var(--ink);
+    margin-bottom: 1.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2rem, 6vw, 3rem);
+    font-weight: 700;
+    line-height: 1.05;
+    text-align: center;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4rem;
+    color: var(--ink);
+  }
+
+  h1 em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--orange);
+  }
+
+  .tagline {
+    font-size: 0.68rem;
+    color: var(--mid);
+    text-align: center;
+    letter-spacing: 0.06em;
+    margin-bottom: 2.2rem;
+    line-height: 1.6;
+  }
+
+  /* ── chips ── */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-bottom: 2.4rem;
+  }
+
+  .chip {
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    border: 1.5px solid;
+    font-weight: 500;
+  }
+
+  .chip.g { background: #e4f5ec; border-color: #4caf80; color: #1a6640; }
+  .chip.o { background: #fdeee6; border-color: var(--orange); color: var(--orange2); }
+  .chip.b { background: #e4f0f0; border-color: var(--teal); color: var(--teal); }
+  .chip.r { background: #fdeaea; border-color: var(--red-tag); color: var(--red-tag); }
+
+  .chip.y { background: #fdf8e4; border-color: #c8a020; color: #7a5c00; }
+
+  .bm-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 0.5rem;
+    align-self: flex-start;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+
+  /* ── THE BOOKMARKLET BUTTON ── */
+  .bm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+    background: var(--orange);
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 1.15rem 3rem;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: grab;
+    border: 2px solid var(--orange2);
+    box-shadow: 4px 4px 0 var(--orange2);
+    transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0.85rem;
+  }
+
+  .bm-btn::before {
+    /* subtle scanline shimmer */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(255,255,255,0.04) 3px,
+      rgba(255,255,255,0.04) 4px
+    );
+    pointer-events: none;
+  }
+
+  .bm-btn:hover {
+    background: var(--orange2);
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 #9e3a12;
+  }
+
+  .bm-btn:active {
+    cursor: grabbing;
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--orange2);
+  }
+
+  .bm-btn-quiz {
+    background: var(--teal);
+    border-color: #1d5c52;
+    box-shadow: 4px 4px 0 #1d5c52;
+  }
+
+  .bm-btn-quiz:hover {
+    background: #1d5c52;
+    box-shadow: 5px 5px 0 #123d36;
+  }
+
+  .bm-icon { font-size: 1.1rem; }
+
+  .drag-cue {
+    font-size: 0.62rem;
+    color: var(--mid);
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  .drag-cue::before, .drag-cue::after {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* ── instructions card ── */
+  .instr-card {
+    width: 100%;
+    background: #faf6ee;
+    border: 2px solid var(--ink);
+    border-radius: 6px;
+    box-shadow: 5px 5px 0 var(--ink);
+    overflow: hidden;
+    margin-bottom: 1.6rem;
+  }
+
+  .instr-header {
+    background: var(--teal);
+    color: #fff;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .instr-header::before {
+    content: '●●●';
+    font-size: 0.5rem;
+    letter-spacing: 0.2em;
+    opacity: 0.6;
+  }
+
+  ol {
+    list-style: none;
+    counter-reset: steps;
+    padding: 0;
+    margin: 0;
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  ol li {
+    counter-increment: steps;
+    display: table-row;
+  }
+
+  ol li::before {
+    display: table-cell;
+    content: counter(steps);
+    font-size: 0.6rem;
+    color: var(--teal);
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 0.8rem 0.9rem 0.8rem 1.6rem;
+    vertical-align: top;
+    border-bottom: 1px dashed var(--line);
+  }
+
+  ol li span.step-text {
+    display: table-cell;
+    font-size: 0.74rem;
+    line-height: 1.7;
+    color: #3a3730;
+    padding: 0.8rem 1.6rem 0.8rem 0;
+    vertical-align: top;
+    border-bottom: 1px dashed var(--line);
+    width: 100%;
+  }
+
+  ol li:last-child::before,
+  ol li:last-child span.step-text {
+    border-bottom: none;
+  }
+
+  ol li strong { color: var(--ink); font-weight: 500; }
+
+  code {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    padding: 0.1em 0.4em;
+    border-radius: 2px;
+    font-size: 0.82em;
+    color: var(--orange2);
+  }
+
+  /* ── console toggle ── */
+  .console-card {
+    width: 100%;
+    border: 2px solid var(--ink);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 5px 5px 0 var(--ink);
+    margin-bottom: 1.6rem;
+  }
+
+  .console-toggle {
+    width: 100%;
+    background: var(--cream);
+    border: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mid);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.2rem;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .console-toggle:hover { background: var(--line); color: var(--ink); }
+
+  .arrow {
+    display: inline-block;
+    transition: transform 0.2s;
+  }
+  .console-toggle.open .arrow { transform: rotate(180deg); }
+
+  .console-body {
+    display: none;
+    background: var(--ink);
+    padding: 1.2rem 1.4rem;
+  }
+
+  .console-body.visible { display: block; }
+
+  .console-hint {
+    font-size: 0.63rem;
+    color: #9a9690;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.9rem;
+  }
+
+  .code-wrap {
+    position: relative;
+  }
+
+  pre {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: #c8c4bc;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.85;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 0; right: 0;
+    background: #2e2b26;
+    border: 1px solid #3e3b36;
+    color: #9a9690;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.06em;
+    padding: 0.22rem 0.6rem;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { color: #f5f2ed; border-color: #5e5b56; }
+  .copy-btn.ok { color: #6fcf97; border-color: #6fcf9760; }
+
+  /* ── footer note ── */
+  .footer-note {
+    font-size: 0.63rem;
+    color: var(--mid);
+    text-align: center;
+    line-height: 1.8;
+    letter-spacing: 0.03em;
+    border-top: 1px dashed var(--line);
+    padding-top: 1.2rem;
+    width: 100%;
+  }
+
+  .footer-note strong { color: var(--ink); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- main card -->
+  <div class="header-strip">futureskills prime &mdash; pathway automation</div>
+  <div class="card">
+
+    <h1>Auto-Complete<br><em>All Modules</em></h1>
+    <p class="tagline">drag the button below into your bookmarks bar<br>then click it on any FSP pathway page</p>
+
+    <div class="chips">
+      <span class="chip g">✓ Zero tabs</span>
+      <span class="chip o">⚡ Direct JS calls</span>
+      <span class="chip b">🔁 Full loop</span>
+      <span class="chip y">🧠 Quiz auto-answer</span>
+    </div>
+
+    <p class="bm-label">On the pathway page</p>
+    <!-- MODULE BOOKMARKLET -->
+    <a class="bm-btn"
+       href="javascript:(function(){var ANIM=1400,ARM=700,AFTER=1000;function wait(ms){return new Promise(function(r){setTimeout(r,ms);})}function getID(vc){var id=vc.id||'';if(id.indexOf('view_content_')===0){return id.replace('view_content_','');}var oc=vc.getAttribute('onclick')||'';var s=oc.indexOf('(');var e=oc.indexOf(',');if(s>-1&&e>-1){return oc.slice(s+1,e).replace(/[^0-9]/g,'');}return'';}function getMCID(mc){var oc=mc?mc.getAttribute('onclick'):'';var s=oc.indexOf('(');var e=oc.indexOf(')');if(s>-1&&e>-1){return oc.slice(s+1,e).replace(/[^0-9]/g,'');}return'';}async function run(){var allGS=Array.from(document.querySelectorAll('button.getStarted'));if(!allGS.length){alert('No modules found on this page.');return;}var done=0,skip=0,quizCount=0;for(var i=0;i<allGS.length;i++){var gs=allGS[i];var ctx=(gs.closest('div,li,section')||document.body).textContent.toLowerCase();if(ctx.includes('quiz')||ctx.includes('assessment')){quizCount++;console.log('Quiz at module '+(i+1)+' — use FSP Quiz button in that tab');skip++;continue;}console.log('Module '+(i+1)+'/'+allGS.length);gs.click();await wait(ANIM);var vc=document.querySelector('a.post_cont_view_content');if(!vc){skip++;gs.click();await wait(400);continue;}var cid=getID(vc);if(!cid){skip++;gs.click();await wait(400);continue;}try{pre_mark_as_complete(cid,'false');}catch(e){skip++;gs.click();await wait(400);continue;}await wait(ARM);var mc=document.querySelector('button#markasComplete');var mcid=getMCID(mc);if(mcid){try{mark_as_complete_hub_product(parseInt(mcid));await wait(AFTER);done++;}catch(e){skip++;}}else{skip++;}gs.click();await wait(600);}alert('Done!\n\nCompleted: '+done+'\nSkipped: '+skip+(quizCount?' ('+quizCount+' quiz — use FSP Quiz button in that tab)':''));}run();})();"
+       onclick="return false;">
+      <span class="bm-icon">⚡</span>
+      FSP Auto-Complete
+    </a>
+
+    <p class="bm-label" style="margin-top:1.1rem">On the quiz tab</p>
+    <!-- QUIZ BOOKMARKLET — href set by JS to avoid &quot; entity rendering issues -->
+    <a class="bm-btn bm-btn-quiz" id="quizBmBtn"
+       href="javascript:(async function(){var obj=document.getElementById('content_id');var odoc=obj&amp;&amp;(obj.contentDocument||(obj.contentWindow&amp;&amp;obj.contentWindow.document));if(!odoc){alert('No quiz found. Make sure the quiz tab is open.');return;}function wait(ms){return new Promise(function(r){setTimeout(r,ms);});}function freshDoc(){var o=document.getElementById('content_id');return o&amp;&amp;(o.contentDocument||(o.contentWindow&amp;&amp;o.contentWindow.document));}function findBtn(doc,text){var els=doc.querySelectorAll('a,button');for(var i=0;i<els.length;i++){if(els[i].textContent.toLowerCase().indexOf(text)>-1)return els[i];}return null;}function selectRadio(r){r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}));r.dispatchEvent(new MouseEvent('click',{bubbles:true}));var labels=odoc.querySelectorAll('label');for(var li=0;li<labels.length;li++){if(labels[li].htmlFor===r.id){labels[li].click();break;}}var cl=r.closest('label');if(cl)cl.click();}var startBtn=findBtn(odoc,'start quiz');if(startBtn){startBtn.click();await wait(1200);}var scripts=[].slice.call(odoc.querySelectorAll('script')).map(function(s){return s.textContent;}).join('');var q='&amp;quot;';var gt='=&amp;gt;';function isCorrect(v){var p1='answer_id'+q+gt+v+', '+q+'answer_hint'+q+gt+q+q+', '+q+'is_true'+q+gt+'1}';var p2='answer_id'+q+gt+v+','+q+'answer_hint'+q+gt+q+q+','+q+'is_true'+q+gt+'1}';return scripts.indexOf(p1)>-1||scripts.indexOf(p2)>-1;}function getVisible(){var qs=odoc.querySelectorAll('[id^=quiz_question]');for(var i=0;i<qs.length;i++){var r=qs[i].getBoundingClientRect();if(r.width>0||r.height>0)return qs[i];}return null;}var total=odoc.querySelectorAll('[id^=quiz_question]').length;for(var attempt=0;attempt<total;attempt++){var qBlock=getVisible();if(!qBlock)break;var submitBtn=qBlock.querySelector('a.submit_quiz_step1');if(!submitBtn)break;var radios=qBlock.querySelectorAll('input[type=radio]');if(!radios.length)break;var correct=null;for(var i=0;i<radios.length;i++){if(isCorrect(radios[i].value)){correct=radios[i];break;}}if(!correct)correct=radios[0];selectRadio(correct);await wait(600);var checked=qBlock.querySelector('input[type=radio]:checked');if(!checked){selectRadio(correct);await wait(400);}submitBtn.click();await wait(900);var nextBtn=qBlock.querySelector('button.quizz_btn');if(nextBtn){nextBtn.click();await wait(700);}}await wait(500);var viewResult=odoc.querySelector('button.submit_quiz_btn');if(viewResult){viewResult.click();await wait(1500);}odoc=freshDoc();var contBtn=findBtn(odoc,'continue');if(contBtn){contBtn.click();await wait(2500);}for(var t=0;t<10;t++){odoc=freshDoc();var processBtn=odoc&amp;&amp;odoc.querySelector('a.prcoess_result');if(processBtn){processBtn.click();break;}await wait(500);}})()"
+       onclick="return false;">
+      <span class="bm-icon">🧠</span>
+      FSP Quiz Auto-Answer
+    </a>
+
+    <p class="drag-cue">drag both to your bookmarks bar</p>
+
+  </div>
+
+  <!-- instructions -->
+  <div class="instr-card">
+    <div class="instr-header">How to use</div>
+    <ol>
+      <li><span class="step-text">Show your bookmarks bar &mdash; <strong>Ctrl+Shift+B</strong> on Windows &nbsp;/&nbsp; <strong>⌘+Shift+B</strong> on Mac</span></li>
+      <li><span class="step-text">Drag <strong>both buttons</strong> above into the bookmarks bar</span></li>
+      <li><span class="step-text">Go to your <strong>FutureSkills Prime pathway page</strong> — the one listing all your modules</span></li>
+      <li><span class="step-text">Click <strong>FSP Auto-Complete</strong> — it loops through all modules, skipping quizzes, and tells you how many quizzes remain when done</span></li>
+      <li><span class="step-text">For each quiz, open the quiz tab, click <strong>Start Quiz</strong>, wait for the first question to appear, then click <strong>FSP Quiz Auto-Answer</strong> — it reads the correct answers from the review page and submits the form directly</span></li>
+      <li><span class="step-text">After the quiz submits, click <strong>Process My Result &amp; Close</strong> to finalise it</span></li>
+      <li><span class="step-text">Already-completed modules are detected and skipped automatically</span></li>
+      <li><span class="step-text">An alert shows <em>Completed</em> and <em>Skipped</em> counts when the module loop finishes</span></li>
+    </ol>
+  </div>
+
+  <!-- console alternative -->
+  <div class="console-card">
+    <button class="console-toggle" id="toggleBtn" onclick="toggleConsole()">
+      <span>Prefer the browser console?</span>
+      <span class="arrow">▾</span>
+    </button>
+    <div class="console-body" id="consoleBody">
+      <p class="console-hint" style="margin-bottom:0.5rem;color:#c8a020;font-size:0.63rem;">— Script 1: Pathway page —</p>
+      <p class="console-hint">Open F12 → Console on your FSP pathway page, paste and press Enter.</p>
+      <div class="code-wrap" style="margin-bottom:1.4rem">
+        <button class="copy-btn" id="copyBtn" onclick="copyCode('scriptCode','copyBtn')">copy</button>
+        <pre id="scriptCode">(async function fspAutoComplete() {
+  const ANIM_WAIT  = 1400;
+  const ARM_WAIT   = 700;
+  const AFTER_DONE = 1000;
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  function getContentID(vc) {
+    const elId = vc.id || '';
+    if (elId.startsWith('view_content_')) return elId.replace('view_content_', '');
+    const oc = vc.getAttribute('onclick') || '';
+    const s = oc.indexOf('('), e = oc.indexOf(',');
+    if (s > -1 && e > -1) return oc.slice(s + 1, e).replace(/[^0-9]/g, '');
+    return '';
+  }
+
+  function getMarkID(mc) {
+    const oc = mc?.getAttribute('onclick') || '';
+    const s = oc.indexOf('('), e = oc.indexOf(')');
+    if (s > -1 && e > -1) return oc.slice(s + 1, e).replace(/[^0-9]/g, '');
+    return '';
+  }
+
+  const allGS = Array.from(document.querySelectorAll('button.getStarted'));
+  console.log(`🚀 Found ${allGS.length} module(s)`);
+  let done = 0, skipped = 0, quizCount = 0;
+
+  for (let i = 0; i < allGS.length; i++) {
+    const gs = allGS[i];
+    const ctx = (gs.closest('div,li,section') || document.body).textContent.toLowerCase();
+    if (ctx.includes('quiz') || ctx.includes('assessment')) {
+      console.log(`⏭ Module ${i + 1}: Quiz — use Script 2 in that tab`);
+      quizCount++; skipped++; continue;
+    }
+    console.log(`\n📦 Module ${i + 1} / ${allGS.length}`);
+    gs.click();
+    await wait(ANIM_WAIT);
+
+    const vc = document.querySelector('a.post_cont_view_content');
+    if (!vc) { skipped++; gs.click(); await wait(400); continue; }
+
+    const contentId = getContentID(vc);
+    if (!contentId) { skipped++; gs.click(); await wait(400); continue; }
+
+    try { pre_mark_as_complete(contentId, 'false'); }
+    catch(e) { console.warn('  ❌', e); skipped++; gs.click(); await wait(400); continue; }
+
+    await wait(ARM_WAIT);
+
+    const mc = document.querySelector('button#markasComplete');
+    const markId = getMarkID(mc);
+    if (markId) {
+      try {
+        mark_as_complete_hub_product(parseInt(markId));
+        await wait(AFTER_DONE);
+        done++;
+        console.log('  🎉 Complete!');
+      } catch(e) { console.warn('  ❌', e); skipped++; }
+    } else {
+      console.log('  ⏭ Already done — skipping.'); skipped++;
+    }
+    gs.click();
+    await wait(600);
+  }
+  console.log(`\n✅ Completed: ${done}  |  ⏭ Skipped: ${skipped}${quizCount ? `  |  🧠 Quizzes: ${quizCount} (run Script 2 in each quiz tab)` : ''}`);
+})();</pre>
+      </div>
+
+      <p class="console-hint" style="margin-bottom:0.5rem;color:#4caf80;font-size:0.63rem;">— Script 2: Quiz tab (after clicking Start Quiz) —</p>
+      <p class="console-hint">Open the quiz tab, click Start Quiz, wait for first question, then paste this.</p>
+      <div class="code-wrap">
+        <button class="copy-btn" id="copyBtn2" onclick="copyCode('quizCode','copyBtn2')">copy</button>
+        <pre id="quizCode">(async function fspQuizAutoAnswer() {
+  // Clicks the correct answer and Submit for each question one by one.
+  // Run AFTER clicking Start Quiz, once the first question is visible.
+
+  const obj  = document.getElementById('content_id');
+  const odoc = obj && (obj.contentDocument || obj.contentWindow?.document);
+  if (!odoc) { alert('No quiz found. Make sure you clicked Start Quiz first.'); return; }
+
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  // Click Start Quiz if present
+  const startBtn = [...odoc.querySelectorAll('a,button')].find(el => el.textContent.trim().toLowerCase() === 'start quiz');
+  if (startBtn) { startBtn.click(); await wait(1200); }
+
+  // Correct answers are in the page scripts as "is_true"=>1
+  const scripts = [...odoc.querySelectorAll('script')].map(s => s.textContent).join('');
+  const q = '&quot;'; const gt = '=&gt;';
+  function isCorrect(v) {
+    return scripts.includes('answer_id'+q+gt+v+', '+q+'answer_hint'+q+gt+q+q+', '+q+'is_true'+q+gt+'1}')
+        || scripts.includes('answer_id'+q+gt+v+','+q+'answer_hint'+q+gt+q+q+','+q+'is_true'+q+gt+'1}');
+  }
+
+  function selectRadio(r) {
+    r.checked = true;
+    r.dispatchEvent(new Event('change', {bubbles: true}));
+    r.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    const labels = odoc.querySelectorAll('label');
+    for (const l of labels) { if (l.htmlFor === r.id) { l.click(); break; } }
+    const cl = r.closest('label'); if (cl) cl.click();
+  }
+
+  function freshDoc() {
+    const o = document.getElementById('content_id');
+    return o && (o.contentDocument || (o.contentWindow && o.contentWindow.document));
+  }
+
+  function getVisible() {
+    for (const q of odoc.querySelectorAll('[id^="quiz_question"]')) {
+      const r = q.getBoundingClientRect();
+      if (r.width > 0 || r.height > 0) return q;
+    }
+    return odoc.querySelector('[id^="quiz_question"]');
+  }
+
+  const total = odoc.querySelectorAll('[id^="quiz_question"]').length;
+  console.log(`🧠 Found ${total} question(s)`);
+  let answered = 0;
+
+  for (let attempt = 0; attempt < total + 2; attempt++) {
+    const qBlock = getVisible();
+    if (!qBlock) break;
+    const radios = qBlock.querySelectorAll('input[type="radio"]');
+    if (!radios.length) break;
+    let correct = [...radios].find(r => isCorrect(r.value)) || radios[0];
+    console.log(`  Q${attempt+1}: ${correct.value} ${isCorrect(correct.value) ? '✅' : '⚠️ fallback'}`);
+    selectRadio(correct);
+    await wait(600);
+    if (!qBlock.querySelector('input[type="radio"]:checked')) { selectRadio(correct); await wait(400); }
+    const submitBtn = qBlock.querySelector('a.submit_quiz_step1');
+    if (!submitBtn) break;
+    submitBtn.click(); answered++; await wait(900);
+    const nextBtn = qBlock.querySelector('button.quizz_btn');
+    if (nextBtn) { nextBtn.click(); await wait(700); }
+  }
+
+  // View Result
+  await wait(500);
+  const viewResult = odoc.querySelector('button.submit_quiz_btn');
+  if (viewResult) { viewResult.click(); await wait(1500); }
+
+  // Continue — re-fetch doc in case it reloaded
+  odoc = freshDoc();
+  const contBtn = [...odoc.querySelectorAll('a,button')].find(el => el.textContent.trim().toLowerCase() === 'continue');
+  if (contBtn) { contBtn.click(); await wait(2500); }
+
+  // Process My Result & Close — poll with fresh doc
+  for (let t = 0; t < 10; t++) {
+    odoc = freshDoc();
+    const processBtn = odoc && odoc.querySelector('a.prcoess_result');
+    if (processBtn) { processBtn.click(); break; }
+    await wait(500);
+  }
+})();</pre>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer-note">
+    If timings are off, tweak <strong>ANIM_WAIT</strong>, <strong>ARM_WAIT</strong>, or <strong>AFTER_DONE</strong> in Script 1.<br>
+    If the quiz script can't find correct answers, it falls back to the first option per question.
+  </p>
+
+</div>
+
+<script>
+  function toggleConsole() {
+    const btn  = document.getElementById('toggleBtn');
+    const body = document.getElementById('consoleBody');
+    btn.classList.toggle('open');
+    body.classList.toggle('visible');
+  }
+  function copyCode(codeId, btnId) {
+    navigator.clipboard.writeText(document.getElementById(codeId).textContent).then(() => {
+      const b = document.getElementById(btnId);
+      b.textContent = 'copied!'; b.classList.add('ok');
+      setTimeout(() => { b.textContent = 'copy'; b.classList.remove('ok'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
